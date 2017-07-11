@@ -4,7 +4,6 @@
 
 clc;
 clear all;
-t=0;
 k=0:0.001:10;
 % hystresis parameter 
 d=0.25;
@@ -16,11 +15,26 @@ a=[1 7 14 6];
 [A,B,C,D]=tf2ss(b,a);
 %identity matrix
 I=eye(3);
-t_star=0.94;
+t_star=0.0;
+t=0;
 
-% comment x* to fnd t* from the graph of g. And set t* for further calculations.
-%uncomment for other observations.
-x_s=inv(expm(A*t_star)+I)*(expm(A*t_star)-I)*inv(A)*B;
+% to find t_star where 2*t_star is the time perid of the limit cycle. 
+for i=1:10001
+    ea=expm(t*A);
+    g=C*(inv(ea+I))*(ea-I)*(inv(A))*B-d;   % g(t)
+    G(:,i)=g;
+    if (g<0.02)
+        if (g>-0.02)
+            t_star=t;
+        end
+    end
+t=t+0.001;    
+end
+
+x_s=inv(expm(A*t_star)+I)*(expm(A*t_star)-I)*inv(A)*B;  % initial condition
+
+t=0;
+
 for i=1:10001
     ea=expm(t*A);  % matrix exponential 
     
@@ -29,10 +43,6 @@ for i=1:10001
     % calculations
     %for reference for y and g refer equation 4 of the paper
     
-    g=C*(inv(ea+I))*(ea-I)*(inv(A))*B-d;   % g(t)
-    G(:,i)=g;
-    
-    %comment from here to find t*
     y=C*(ea*((x_s)-(inv(A)*B))+(inv(A)*B))+d; % output as y(t)+d 
     Y(:,i)=y;
     
@@ -57,14 +67,15 @@ for i=1:10001
     deriv=P-(H'*P*H);
     
     %find the eigen values to validate the inequality 
-    eig_values=eig(deriv);
+    eig_values=eig(P);
     
     % if min is positive then stable.
     value=min(double(eig_values));
     V(:,i)=value;
-    %comment till here
+    
     t=t+0.001;
 end
+
 subplot(3,1,1);
 
 %plot g and find t* for g=0.
